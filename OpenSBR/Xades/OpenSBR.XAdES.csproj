@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard20</TargetFramework>
+    <AssemblyName>OpenSBR.XAdES</AssemblyName>
+    <RootNamespace>OpenSBR.XAdES</RootNamespace>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <FileVersion>1.2.0.0</FileVersion>
+    <Copyright>Copyright © OpenSBR.org 2018</Copyright>
+    <Company>OpenSBR</Company>
+    <Authors />
+    <Description>Xades implementation</Description>
+    <Version>1.2</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="4.6.0-preview6.19303.8" />
+  </ItemGroup>
+
+</Project>

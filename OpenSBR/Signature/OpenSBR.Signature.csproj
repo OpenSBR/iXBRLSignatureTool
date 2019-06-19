@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard20</TargetFramework>
+    <AssemblyName>OpenSBR.Signature</AssemblyName>
+    <RootNamespace>OpenSBR.Signature</RootNamespace>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Copyright>Copyright © OpenSBR.org 2019</Copyright>
+    <Company>OpenSBR</Company>
+    <Authors />
+    <Description>Digital signature abstraction layer</Description>
+    <Version>1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Xades\OpenSBR.XAdES.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="4.6.0-preview6.19303.8" />
+  </ItemGroup>
+
+</Project>

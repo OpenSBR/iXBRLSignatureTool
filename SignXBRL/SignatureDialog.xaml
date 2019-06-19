@@ -1,0 +1,201 @@
+﻿<Window x:Class="SignXBRL.SignatureDialog"
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:local="clr-namespace:SignXBRL"
+		xmlns:sig="clr-namespace:OpenSBR.Signature;assembly=OpenSBR.Signature"
+		mc:Ignorable="d"
+		AllowDrop="True" Drop="Window_Drop"
+		Title="Sign" Height="380" Width="800" WindowStartupLocation="CenterOwner">
+
+	<Window.Resources>
+		<Style x:Key="removeButtonStyle" TargetType="{x:Type Button}">
+			<Setter Property="Focusable" Value="False" />
+			<Setter Property="OverridesDefaultStyle" Value="True" />
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="{x:Type Button}">
+						<Border x:Name="border" CornerRadius="1" BorderThickness="0" Background="Transparent" ToolTip="Remove">
+							<Path x:Name="path" Data="M0,0 L10,10 M0,10 L10,0" Stroke="DarkGray" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Margin="2,1" />
+						</Border>
+						<ControlTemplate.Triggers>
+							<Trigger Property="IsMouseOver" Value="True">
+								<Setter TargetName="path" Property="Stroke" Value="DarkRed" />
+							</Trigger>
+							<Trigger Property="IsPressed" Value="True">
+								<Setter TargetName="path" Property="Margin" Value="3,2,1,0" />
+							</Trigger>
+						</ControlTemplate.Triggers>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
+
+		<Style x:Key="idComboStyle" TargetType="{x:Type ComboBox}">
+			<Style.Resources>
+				<Style TargetType="ComboBoxItem">
+					<Setter Property="HorizontalContentAlignment" Value="Stretch" />
+				</Style>
+				<Style TargetType="ToolTip">
+					<Style.Resources>
+						<Style TargetType="ContentPresenter">
+							<Style.Resources>
+								<Style TargetType="TextBlock">
+									<Setter Property="TextWrapping" Value="Wrap" />
+								</Style>
+							</Style.Resources>
+						</Style>
+					</Style.Resources>
+					<Setter Property="MaxWidth" Value="500" />
+				</Style>
+			</Style.Resources>
+			<Setter Property="ToolTip" Value="{Binding Path=SelectedItem.Description, RelativeSource={RelativeSource Self}}" />
+			<Setter Property="ToolTipService.ShowDuration" Value="20000" />
+			<Setter Property="ItemTemplate">
+				<Setter.Value>
+					<DataTemplate>
+						<TextBlock Text="{Binding Path=Id}" ToolTip="{Binding Path=Description}" ToolTipService.ShowDuration="20000" />
+					</DataTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
+	</Window.Resources>
+	
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="Auto" />
+			<ColumnDefinition Width="Auto" />
+			<ColumnDefinition Width="*" />
+		</Grid.ColumnDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="*" />
+		</Grid.RowDefinitions>
+
+		<TextBlock Margin="4" Grid.ColumnSpan="2" Text="Additional files to include in signature:" VerticalAlignment="Bottom" />
+		<Button Grid.Column="2" Width="80" Height="25" Content="Add files..." Margin="6" VerticalAlignment="Top" HorizontalAlignment="Right" Click="AddFiles_Click" />
+		<ListView Grid.Row="1" Grid.ColumnSpan="3" ItemsSource="{Binding Path=Items}" Margin="2" Height="180">
+			<ListBox.ItemContainerStyle>
+				<Style TargetType="{x:Type ListBoxItem}">
+					<Setter Property="Focusable" Value="False"/>
+					<Setter Property="HorizontalContentAlignment" Value="Stretch" />
+				</Style>
+			</ListBox.ItemContainerStyle>
+			<ListView.View>
+				<GridView>
+					<GridViewColumn Header="Reference" Width="250">
+						<GridViewColumn.CellTemplate>
+							<DataTemplate>
+								<TextBlock ToolTip="{Binding Path=Uri}">
+									<TextBlock.Style>
+										<Style TargetType="TextBlock">
+											<Setter Property="Text" Value="{Binding Path=Uri}" />
+											<Style.Triggers>
+												<DataTrigger Binding="{Binding Path=Type}" Value="{x:Static sig:SignedItemType.Document}">
+													<Setter Property="Foreground" Value="Gray" />
+													<Setter Property="Text" Value="(parent document)" />
+												</DataTrigger>
+												<DataTrigger Binding="{Binding Path=Type}" Value="{x:Static sig:SignedItemType.Signature}">
+													<Setter Property="Foreground" Value="Gray" />
+													<Setter Property="Text" Value="(parent signature)" />
+												</DataTrigger>
+											</Style.Triggers>
+										</Style>
+									</TextBlock.Style>
+								</TextBlock>
+							</DataTemplate>
+						</GridViewColumn.CellTemplate>
+					</GridViewColumn>
+					<!--<GridViewColumn Header="Type" DisplayMemberBinding="{Binding Path=Type}" Width="100" />-->
+					<GridViewColumn Header="Type" Width="100">
+						<GridViewColumn.CellTemplate>
+							<DataTemplate>
+								<TextBlock>
+									<TextBlock.Style>
+										<Style TargetType="TextBlock">
+											<Setter Property="Text" Value="{Binding Path=Type}" />
+											<Style.Triggers>
+												<DataTrigger Binding="{Binding Path=Type}" Value="{x:Static sig:SignedItemType.File}">
+													<Setter Property="Text" Value="{Binding Path=Transform.Name}" />
+												</DataTrigger>
+											</Style.Triggers>
+										</Style>
+									</TextBlock.Style>
+								</TextBlock>
+							</DataTemplate>
+						</GridViewColumn.CellTemplate>
+					</GridViewColumn>
+					<GridViewColumn Header="Commitment type" Width="350">
+						<GridViewColumn.CellTemplate>
+							<DataTemplate>
+								<Grid>
+									<ComboBox ItemsSource="{Binding Path=SelectedPolicy.CommitmentTypes, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:SignatureDialog}}}" SelectedItem="{Binding Path=CommitmentType}" SelectionChanged="CommitmentType_SelectionChanged">
+										<ComboBox.Style>
+											<Style BasedOn="{StaticResource idComboStyle}" TargetType="ComboBox">
+												<Style.Triggers>
+													<DataTrigger Binding="{Binding Path=SelectedPolicy.CommitmentTypes, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:SignatureDialog}}}" Value="{x:Null}">
+														<Setter Property="IsEnabled" Value="False" />
+													</DataTrigger>
+												</Style.Triggers>
+											</Style>
+										</ComboBox.Style>
+									</ComboBox>
+								</Grid>
+							</DataTemplate>
+						</GridViewColumn.CellTemplate>
+					</GridViewColumn>
+					<GridViewColumn Header="" Width="28">
+						<GridViewColumn.CellTemplate>
+							<DataTemplate>
+								<Button Margin="0,2,0,0" Click="RemoveItem_Click">
+									<Button.Style>
+										<Style BasedOn="{StaticResource removeButtonStyle}" TargetType="Button">
+											<Style.Triggers>
+												<DataTrigger Binding="{Binding Path=Type}" Value="{x:Static sig:SignedItemType.Document}">
+													<Setter Property="Visibility" Value="Hidden" />
+												</DataTrigger>
+												<DataTrigger Binding="{Binding Path=Type}" Value="{x:Static sig:SignedItemType.Signature}">
+													<Setter Property="Visibility" Value="Hidden" />
+												</DataTrigger>
+											</Style.Triggers>
+										</Style>
+									</Button.Style>
+								</Button>
+							</DataTemplate>
+						</GridViewColumn.CellTemplate>
+					</GridViewColumn>
+				</GridView>
+			</ListView.View>
+		</ListView>
+		<TextBlock Grid.Row="2" Margin="4,11" Text="Signing policy" />
+		<ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Path=Policies}" SelectedItem="{Binding Path=SelectedPolicy}" Width="300" Margin="8">
+			<ComboBox.Style>
+				<Style BasedOn="{StaticResource idComboStyle}" TargetType="ComboBox">
+					<Style.Triggers>
+						<DataTrigger Binding="{Binding Path=Policies}" Value="{x:Null}">
+							<Setter Property="IsEnabled" Value="False" />
+						</DataTrigger>
+					</Style.Triggers>
+				</Style>
+			</ComboBox.Style>
+		</ComboBox>
+		<TextBlock Grid.Row="3" Margin="4,11" Text="Certificate" />
+		<ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Path=CertificateList}" SelectedItem="{Binding Path=SelectedCertificate}" Width="300" Height="38" Margin="8" VerticalAlignment="Top">
+			<ComboBox.ItemTemplate>
+				<DataTemplate>
+					<StackPanel Orientation="Vertical">
+						<StackPanel Orientation="Horizontal">
+							<TextBlock Text="{Binding Path=FriendlyName, StringFormat={}\'{0}\'}" />
+							<TextBlock Text="{Binding Path=Subject, StringFormat={}; {0}}" />
+						</StackPanel>
+						<TextBlock Text="{Binding Path=Issuer, StringFormat={}Issued by: {0}}" Foreground="Gray" />
+					</StackPanel>
+				</DataTemplate>
+			</ComboBox.ItemTemplate>
+		</ComboBox>
+		<Button Grid.Row="3" Grid.Column="2" Width="75" Height="25" Content="Sign" Margin="8" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="Sign_Click" IsEnabled="{Binding Path=SignEnable}" />
+	</Grid>
+</Window>
