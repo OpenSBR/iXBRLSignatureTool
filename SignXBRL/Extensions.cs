@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Xml;
 
 namespace SignXBRL
 {
@@ -112,5 +113,14 @@ namespace SignXBRL
 				return null;
 			return Encoding.UTF8.GetString(roleExtension.RawData, 2, roleExtension.RawData[1]);
 		}
+
+		public static XmlElement CreateChild(this XmlElement element, string name, string ns)
+		{
+			string prefix = element.GetPrefixOfNamespace(ns);
+			XmlElement child = element.OwnerDocument.CreateElement(prefix, name, ns);
+			element.AppendChild(child);
+			return child;
+		}
+
 	}
 }

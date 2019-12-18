@@ -155,12 +155,36 @@ namespace SignXBRL
 					signatureLocation = (XmlElement)_document.Signatures.First().XmlElement.ParentNode;
 				else if (xmlDocument.DocumentElement.LocalName == "html" && xmlDocument.DocumentElement.NamespaceURI == "http://www.w3.org/1999/xhtml")
 				{
+					// find resources section
 					XmlNamespaceManager nsm = new XmlNamespaceManager(new NameTable());
 					nsm.AddNamespace("xhtml", "http://www.w3.org/1999/xhtml");
-					XmlElement body = (XmlElement)xmlDocument.SelectSingleNode("/xhtml:html/xhtml:body", nsm);
-					signatureLocation = xmlDocument.CreateElement("div", "http://www.w3.org/1999/xhtml");
-					signatureLocation.SetAttribute("style", "display: none");
-					body.AppendChild(signatureLocation);
+					nsm.AddNamespace("ix", "http://www.xbrl.org/2013/inlineXBRL");
+					XmlElement resources = (XmlElement)xmlDocument.SelectSingleNode("/xhtml:html//ix:header/ix:resources", nsm);
+					if (resources != null)
+					{
+						// create unique id for context
+						HashSet<string> ids = xmlDocument.SelectNodes("//@id | //@Id").OfType<XmlAttribute>().Select(x => x.Value).ToHashSet();
+						string contextId;
+						Random rnd = new Random();
+						for (contextId = "signature"; ids.Contains(contextId); contextId = $"signature-{rnd.Next():x8}") ;
+						// create context
+						XmlElement context = resources.CreateChild("context", "http://www.xbrl.org/2003/instance");
+						context.SetAttribute("id", contextId);
+						XmlElement entity = context.CreateChild("entity", "http://www.xbrl.org/2003/instance");
+						XmlElement identifier = entity.CreateChild("identifier", "http://www.xbrl.org/2003/instance");
+						identifier.SetAttribute("scheme", System.Security.Cryptography.Xml.SignedXml.XmlDsigNamespaceUrl);
+						identifier.InnerText = "Signature";
+						signatureLocation = entity.CreateChild("segment", "http://www.xbrl.org/2003/instance");
+						XmlElement period = context.CreateChild("period", "http://www.xbrl.org/2003/instance");
+						XmlElement forever = period.CreateChild("forever", "http://www.xbrl.org/2003/instance");
+					}
+					else
+					{
+						// no xbrl resources; treat as regular xhtml
+						XmlElement body = (XmlElement)xmlDocument.SelectSingleNode("/xhtml:html/xhtml:body", nsm);
+						signatureLocation = body.CreateChild("div", "http://www.w3.org/1999/xhtml");
+						signatureLocation.SetAttribute("style", "display: none");
+					}
 				}
 				else
 					signatureLocation = xmlDocument.DocumentElement;
