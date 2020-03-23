@@ -6,7 +6,7 @@ using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography.Xml;
+using System.Security.Cryptography.Xml.Patched;
 using System.Xml;
 
 namespace OpenSBR.XAdES
@@ -30,7 +30,7 @@ namespace OpenSBR.XAdES
 
 		internal XadesSignatureProperties()
 		{
-			CertificateDigest = SignedXml.XmlDsigSHA1Url; //.XmlDsigSHA256Url;
+			CertificateDigest = SignedXml.XmlDsigSHA256Url;
 			IncludeSigningCertificate = true;
 		}
 

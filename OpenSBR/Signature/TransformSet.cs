@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Xml;
+using System.Security.Cryptography.Xml.Patched;
 using System.Xml;
 
 namespace OpenSBR.Signature

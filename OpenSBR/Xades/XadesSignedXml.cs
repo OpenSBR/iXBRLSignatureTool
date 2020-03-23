@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.Xml;
+using System.Security.Cryptography.Xml.Patched;
 using System.Text;
 using System.Xml;
 
@@ -11,24 +11,26 @@ namespace OpenSBR.XAdES
 	// The .NET implementation does not include these by default. This implementation returns a copy of the fragment, wrapped in a parent element with all namespace declarations and xml-namespace attributes from the signature context.
 	internal class XadesSignedXml : SignedXml
 	{
-		private Dictionary<string, XmlElement> _idIndex = new Dictionary<string, XmlElement>();
-		private XmlElement _signatureParent;
+		// Not necessary with the inclusion of Id attributes in System.Security.Cryptography.Xml.Patched
+
+		//private Dictionary<string, XmlElement> _idIndex = new Dictionary<string, XmlElement>();
+		//private XmlElement _signatureParent;
 
 		public XadesSignedXml(XmlDocument document) : base(document)
 		{ }
 
 		public XadesSignedXml(XmlElement elem) : base(elem)
 		{
-			_signatureParent = elem;
+			//_signatureParent = elem;
 		}
 
 		public void AddXadesObject(DataObject dataObject)
 		{
 			base.AddObject(dataObject);
-			_idIndex = dataObject.Data.OfType<XmlElement>().SelectMany(x => x.SelectNodes("//@id | //@Id").OfType<XmlAttribute>()).ToDictionary(x => x.Value, x => x.OwnerElement);
+			//_idIndex = dataObject.Data.OfType<XmlElement>().SelectMany(x => x.SelectNodes("//@id | //@Id").OfType<XmlAttribute>()).ToDictionary(x => x.Value, x => x.OwnerElement);
 		}
 
-		public override XmlElement GetIdElement(XmlDocument document, string idValue)
+		/*public override XmlElement GetIdElement(XmlDocument document, string idValue)
 		{
 			if (_idIndex.TryGetValue(idValue, out XmlElement element))
 			{
@@ -49,6 +51,6 @@ namespace OpenSBR.XAdES
 				return copy;
 			}
 			return base.GetIdElement(document, idValue);
-		}
+		}*/
 	}
 }

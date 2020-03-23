@@ -6,7 +6,7 @@ using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography.Xml;
+using System.Security.Cryptography.Xml.Patched;
 using System.Text;
 using System.Xml;
 
@@ -94,7 +94,7 @@ namespace OpenSBR.XAdES
 		private Xades(XmlElement element)
 		{
 			_document = element.OwnerDocument;
-			_signedXml = new SignedXml(_document);
+			_signedXml = new XadesSignedXml(_document);
 			_signedXml.LoadXml(element);
 
 			CanonicalizationMethod = _signedXml.SignedInfo.CanonicalizationMethod;
@@ -225,7 +225,7 @@ namespace OpenSBR.XAdES
 
 			// set key
 			KeyInfo keyInfo = new KeyInfo();
-			keyInfo.AddClause(new KeyInfoX509Data(certificate));
+			keyInfo.AddClause(new KeyInfoX509Data(certificate, X509IncludeOption.WholeChain));
 			signedXml.SigningKey = certificate.GetRSAPrivateKey();
 			signedXml.KeyInfo = keyInfo;
 

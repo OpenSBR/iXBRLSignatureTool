@@ -142,7 +142,6 @@ namespace SignXBRL
 			if (cert == null)
 				return;
 
-			Cursor lastCursor = Cursor;
 			Cursor = Cursors.Wait;
 
 			XmlDocument xmlDocument = _document.XmlDocument;
@@ -196,7 +195,7 @@ namespace SignXBRL
 				result = _parentSignature.Countersign(cert, Items.ToList(), SelectedPolicy);
 			}
 
-			Cursor = lastCursor;
+			Cursor = null;
 
 			DialogResult = result;
 			Close();

@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Xml;
 
 namespace SignXBRL
@@ -49,12 +50,14 @@ namespace SignXBRL
 		{
 			try
 			{
+				Cursor = Cursors.Wait;
 				_filename = file;
 				NotifyChange("TitleFile");
 				Document = await Task.Run(() => SignatureDocument.Load(file));
 				NotifyChange("Document");
 				NotifyChange("SignEnable");
 				NotifyChange("CountersignEnable");
+				Cursor = null;
 			}
 			catch (XmlException)
 			{
@@ -138,8 +141,8 @@ namespace SignXBRL
 		{
 			System.Security.Cryptography.X509Certificates.X509Certificate2 cert = value as System.Security.Cryptography.X509Certificates.X509Certificate2;
 			if ("ca".Equals(parameter))
-				return cert.IssuerInfo();
-			return cert.SubjectInfo();
+				return cert?.IssuerInfo();
+			return cert?.SubjectInfo();
 		}
 
 		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

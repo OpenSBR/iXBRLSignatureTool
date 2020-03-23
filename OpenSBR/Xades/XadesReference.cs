@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography.Xml;
+using System.Security.Cryptography.Xml.Patched;
 using System.Xml;
 
 namespace OpenSBR.XAdES
@@ -37,7 +37,7 @@ namespace OpenSBR.XAdES
 		{
 			URI = uri;
 			TransformChain = transformChain;
-			DigestMethod = digestMethod ?? SignedXml.XmlDsigSHA1Url; //.XmlDsigSHA256Url;
+			DigestMethod = digestMethod ?? SignedXml.XmlDsigSHA256Url;
 
 			CommitmentTypeQualifiers = new List<XmlElement>();
 		}

@@ -14,11 +14,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\System.Security.Cryptography.Xml.Patched\System.Security.Cryptography.Xml.Patched.csproj" />
     <ProjectReference Include="..\Xades\OpenSBR.XAdES.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="4.6.0-preview6.19303.8" />
   </ItemGroup>
 
 </Project>

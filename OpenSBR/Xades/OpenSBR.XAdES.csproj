@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard20</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>OpenSBR.XAdES</AssemblyName>
     <RootNamespace>OpenSBR.XAdES</RootNamespace>
     <AssemblyVersion>1.2.0.0</AssemblyVersion>
@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="4.6.0-preview6.19303.8" />
+    <ProjectReference Include="..\..\System.Security.Cryptography.Xml.Patched\System.Security.Cryptography.Xml.Patched.csproj" />
   </ItemGroup>
 
 </Project>
