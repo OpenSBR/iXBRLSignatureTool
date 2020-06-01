@@ -20,6 +20,16 @@ Fixes applied:
       <bar xml:lang="en"></bar>
     </item>
 
+- Inclusive C14N removes duplicate xml:* attributes; while redundant namespace declarations should be removed, these attributes should not.
+  For example:
+  <root xml:lang="en">
+    <item xml:lang="en" />
+  </root>
+  incorrectly results in:
+  <root xml:lang="en">
+    <item></item>
+  </root>
+
 - Exclusive C14N includes all ancestor xml:* attributes on document fragments. These attributes are propagated before any transform; while inclusive C14N should
   include them, exclusive should not, but it can no longer be determined where these attributes came from.
   For example:

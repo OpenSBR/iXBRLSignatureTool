@@ -33,24 +33,23 @@ namespace System.Security.Cryptography.Xml.Patched
             XmlAttribute rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
             if (local != null)
             {
-                if (Utils.IsNonRedundantNamespaceDecl(local, rAncestral))
+                if (Utils.IsXmlNamespaceNode(local))
+                    attrListToRender.Add(local, null);
+                else if (Utils.IsNonRedundantNamespaceDecl(local, rAncestral))
                 {
                     nsLocallyDeclared.Remove(nsPrefix);
-                    if (Utils.IsXmlNamespaceNode(local))
-                        attrListToRender.Add(local, null);
-                    else
-                        nsListToRender.Add(local, null);
+                    nsListToRender.Add(local, null);
                 }
             }
             else
             {
                 int uDepth;
                 XmlAttribute uAncestral = GetNearestUnrenderedNamespaceWithMatchingPrefix(nsPrefix, out uDepth);
-                if (uAncestral != null && uDepth > rDepth && Utils.IsNonRedundantNamespaceDecl(uAncestral, rAncestral))
+                if (uAncestral != null && uDepth > rDepth)
                 {
                     if (Utils.IsXmlNamespaceNode(uAncestral))
                         attrListToRender.Add(uAncestral, null);
-                    else
+                    else if (Utils.IsNonRedundantNamespaceDecl(uAncestral, rAncestral))
                         nsListToRender.Add(uAncestral, null);
                 }
             }
@@ -66,13 +65,12 @@ namespace System.Security.Cryptography.Xml.Patched
                 attrib = (XmlAttribute)a;
                 int rDepth;
                 XmlAttribute rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(Utils.GetNamespacePrefix(attrib), out rDepth);
-                if (Utils.IsNonRedundantNamespaceDecl(attrib, rAncestral))
+                if (Utils.IsXmlNamespaceNode(attrib))
+                    attrListToRender.Add(attrib, null);
+                else if (Utils.IsNonRedundantNamespaceDecl(attrib, rAncestral))
                 {
                     nsLocallyDeclared.Remove(Utils.GetNamespacePrefix(attrib));
-                    if (Utils.IsXmlNamespaceNode(attrib))
-                        attrListToRender.Add(attrib, null);
-                    else
-                        nsListToRender.Add(attrib, null);
+                    nsListToRender.Add(attrib, null);
                 }
             }
 

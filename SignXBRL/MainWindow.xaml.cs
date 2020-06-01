@@ -69,7 +69,14 @@ namespace SignXBRL
 
 		public void Save()
 		{
-			string signed = $"{Path.Combine(Path.GetDirectoryName(_filename), Path.GetFileNameWithoutExtension(_filename))}.signed{Path.GetExtension(_filename)}";
+			string signed = System.Text.RegularExpressions.Regex.Replace(_filename, @"(?:(\.signed)(\d*))?(\.[^.]+)$", m =>
+			{
+				if (!string.IsNullOrEmpty(m.Groups[2].Value))
+					return $"{m.Groups[1].Value}{int.Parse(m.Groups[2].Value) + 1}{m.Groups[3].Value}";
+				if (!string.IsNullOrEmpty(m.Groups[1].Value))
+					return $"{m.Groups[1].Value}2{m.Groups[3].Value}";
+				return $".signed{m.Groups[3].Value}";
+			});
 			if (File.Exists(signed))
 				File.Delete(signed);
 			Document.XmlDocument.Save(signed);

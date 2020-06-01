@@ -134,7 +134,7 @@ namespace SignXBRL
 			X509Certificate2 cert = SelectedCertificate;
 			if (cert == null)
 			{
-				X509Certificate2Collection certs = X509Certificate2UI.SelectFromCollection(Utils.GetCertificates(), "Select a certificate", "Choose your certifcate to sign documents and provide proof of integrity", X509SelectionFlag.SingleSelection);
+				X509Certificate2Collection certs = X509Certificate2UI.SelectFromCollection(Utils.GetCertificates(), "Select a certificate", "Choose your certificate to sign documents and provide proof of integrity", X509SelectionFlag.SingleSelection);
 				if (certs.Count < 1)
 					return;
 				cert = certs[0];
