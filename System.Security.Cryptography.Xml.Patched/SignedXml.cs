@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.Xml.Patched
 
         private void Initialize(XmlElement element)
         {
-            _containingDocument = (element == null ? null : element.OwnerDocument);
+            _containingDocument = element?.OwnerDocument;
             _context = element;
             m_signature = new Signature();
             m_signature.SignedXml = this;
@@ -249,9 +249,8 @@ namespace System.Security.Cryptography.Xml.Patched
 
         public bool CheckSignature()
         {
-            AsymmetricAlgorithm signingKey;
-            return CheckSignatureReturningKey(out signingKey);
-        }
+			return CheckSignatureReturningKey(out AsymmetricAlgorithm signingKey);
+		}
 
         public bool CheckSignatureReturningKey(out AsymmetricAlgorithm signingKey)
         {
@@ -427,11 +426,10 @@ namespace System.Security.Cryptography.Xml.Patched
             if (macAlg == null)
                 throw new ArgumentNullException(nameof(macAlg));
 
-            HMAC hash = macAlg as HMAC;
-            if (hash == null)
-                throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch);
+			if (!(macAlg is HMAC hash))
+				throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch);
 
-            int signatureLength;
+			int signatureLength;
             if (m_signature.SignedInfo.SignatureLength == null)
                 signatureLength = hash.HashSize;
             else
@@ -443,31 +441,17 @@ namespace System.Security.Cryptography.Xml.Patched
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidSignatureLength2);
 
             BuildDigestedReferences();
-            switch (hash.HashName)
-            {
-                case "SHA1":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigHMACSHA1Url;
-                    break;
-                case "SHA256":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACSHA256Url;
-                    break;
-                case "SHA384":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACSHA384Url;
-                    break;
-                case "SHA512":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACSHA512Url;
-                    break;
-                case "MD5":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACMD5Url;
-                    break;
-                case "RIPEMD160":
-                    SignedInfo.SignatureMethod = SignedXml.XmlDsigMoreHMACRIPEMD160Url;
-                    break;
-                default:
-                    throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch);
-            }
-
-            byte[] hashValue = GetC14NDigest(hash);
+			SignedInfo.SignatureMethod = hash.HashName switch
+			{
+				"SHA1" => SignedXml.XmlDsigHMACSHA1Url,
+				"SHA256" => SignedXml.XmlDsigMoreHMACSHA256Url,
+				"SHA384" => SignedXml.XmlDsigMoreHMACSHA384Url,
+				"SHA512" => SignedXml.XmlDsigMoreHMACSHA512Url,
+				"MD5" => SignedXml.XmlDsigMoreHMACMD5Url,
+				"RIPEMD160" => SignedXml.XmlDsigMoreHMACRIPEMD160Url,
+				_ => throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch),
+			};
+			byte[] hashValue = GetC14NDigest(hash);
 
             SignedXmlDebugLog.LogSigning(this, hash);
             m_signature.SignatureValue = new byte[signatureLength / 8];
@@ -496,27 +480,24 @@ namespace System.Security.Cryptography.Xml.Patched
             // In our implementation, we move to the next KeyInfo clause which is an RSAKeyValue, DSAKeyValue or KeyInfoX509Data
             while (_keyInfoEnum.MoveNext())
             {
-                RSAKeyValue rsaKeyValue = _keyInfoEnum.Current as RSAKeyValue;
-                if (rsaKeyValue != null)
-                    return rsaKeyValue.Key;
+				if (_keyInfoEnum.Current is RSAKeyValue rsaKeyValue)
+					return rsaKeyValue.Key;
 
-                DSAKeyValue dsaKeyValue = _keyInfoEnum.Current as DSAKeyValue;
-                if (dsaKeyValue != null)
-                    return dsaKeyValue.Key;
+				if (_keyInfoEnum.Current is DSAKeyValue dsaKeyValue)
+					return dsaKeyValue.Key;
 
-                KeyInfoX509Data x509Data = _keyInfoEnum.Current as KeyInfoX509Data;
-                if (x509Data != null)
-                {
-                    _x509Collection = Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification);
-                    if (_x509Collection.Count > 0)
-                    {
-                        _x509Enum = _x509Collection.GetEnumerator();
-                        AsymmetricAlgorithm key = GetNextCertificatePublicKey();
-                        if (key != null)
-                            return key;
-                    }
-                }
-            }
+				if (_keyInfoEnum.Current is KeyInfoX509Data x509Data)
+				{
+					_x509Collection = Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification);
+					if (_x509Collection.Count > 0)
+					{
+						_x509Enum = _x509Collection.GetEnumerator();
+						AsymmetricAlgorithm key = GetNextCertificatePublicKey();
+						if (key != null)
+							return key;
+					}
+				}
+			}
 
             return null;
         }
@@ -528,10 +509,9 @@ namespace System.Security.Cryptography.Xml.Patched
             {
                 foreach (KeyInfoClause clause in KeyInfo)
                 {
-                    KeyInfoX509Data x509Data = clause as KeyInfoX509Data;
-                    if (x509Data != null)
-                        collection.AddRange(Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification));
-                }
+					if (clause is KeyInfoX509Data x509Data)
+						collection.AddRange(Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification));
+				}
             }
 
             return collection;
@@ -659,18 +639,17 @@ namespace System.Security.Cryptography.Xml.Patched
                 return false;
             }
 
-            // Figure out how many bits the signature is using
-            int actualSignatureSize = 0;
-            if (!int.TryParse(SignedInfo.SignatureLength, out actualSignatureSize))
-            {
-                // If the value wasn't a valid integer, then we'll conservatively reject it all together
-                return true;
-            }
+			// Figure out how many bits the signature is using
+			if (!int.TryParse(SignedInfo.SignatureLength, out int actualSignatureSize))
+			{
+				// If the value wasn't a valid integer, then we'll conservatively reject it all together
+				return true;
+			}
 
-            // Make sure the full HMAC signature size is the same size that was specified in the XML
-            // signature.  If the actual signature size is not exactly the same as the full HMAC size, then
-            // reject the signature.
-            return actualSignatureSize != hmac.HashSize;
+			// Make sure the full HMAC signature size is the same size that was specified in the XML
+			// signature.  If the actual signature size is not exactly the same as the full HMAC size, then
+			// reject the signature.
+			return actualSignatureSize != hmac.HashSize;
         }
 
         // Validation function to see if the signature uses a canonicalization algorithm from our list
@@ -792,7 +771,7 @@ namespace System.Security.Cryptography.Xml.Patched
             bool isKeyedHashAlgorithm = hash is KeyedHashAlgorithm;
             if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo.CacheValid)
             {
-                string baseUri = (_containingDocument == null ? null : _containingDocument.BaseURI);
+                string baseUri = _containingDocument?.BaseURI;
                 XmlResolver resolver = (_bResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
 
                 XmlDocument doc = Utils.PreProcessElementInput(SignedInfo.GetXml(), resolver, baseUri);
@@ -986,7 +965,7 @@ namespace System.Security.Cryptography.Xml.Patched
                     // This cannot overflow more than once (and back to 0) because bytes are 1 byte
                     // in length, and result is 4 bytes. The OR propagates all set bytes, so the differences
                     // can't add up and overflow a second time.
-                    result = result | (a[i] - b[i]);
+                    result |= (a[i] - b[i]);
             }
 
             return (0 == result);

@@ -7,6 +7,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml.Patched;
 using System.Xml;
 
+#nullable enable
+
 namespace OpenSBR.Signature
 {
 	/// <summary>
@@ -14,10 +16,10 @@ namespace OpenSBR.Signature
 	/// </summary>
 	public class SignatureDocument
 	{
-		public List<Signature> Signatures { get; private set; }
-		public string BaseUri { get => XmlDocument.BaseURI; }
+		public List<Signature>? Signatures { get; private set; }
+		public string? BaseUri { get => XmlDocument?.BaseURI; }
 
-		public XmlDocument XmlDocument { get; private set; }
+		public XmlDocument? XmlDocument { get; private set; }
 
 		public static SignatureDocument Load(string file)
 		{
@@ -30,7 +32,7 @@ namespace OpenSBR.Signature
 		public static SignatureDocument Load(XmlDocument document)
 		{
 			IEnumerable<XmlElement> signatureNodes = document.GetElementsByTagName("Signature", SignedXml.XmlDsigNamespaceUrl).OfType<XmlElement>();
-			ILookup<XmlElement, XmlElement> childIndex = signatureNodes.ToLookup(x => GetParentElement(x, "Signature", SignedXml.XmlDsigNamespaceUrl));
+			ILookup<XmlElement?, XmlElement> childIndex = signatureNodes.ToLookup(x => GetParentElement(x, "Signature", SignedXml.XmlDsigNamespaceUrl));
 
 			return new SignatureDocument()
 			{
@@ -39,7 +41,7 @@ namespace OpenSBR.Signature
 			};
 		}
 
-		private static XmlElement GetParentElement(XmlElement element, string localName, string namespaceURI)
+		private static XmlElement? GetParentElement(XmlElement element, string localName, string namespaceURI)
 		{
 			for (element = element.ParentNode as XmlElement; element != null; element = element.ParentNode as XmlElement)
 			{
@@ -50,6 +52,18 @@ namespace OpenSBR.Signature
 		}
 
 		public bool Sign(XmlElement signatureLocation, X509Certificate2 cert, List<SignedItem> items, SignaturePolicy policy)
+		{
+			XadesReference reference = new XadesReference("#xpointer(/)", TransformSet.Document.TransformChain);
+			return SignInternal(signatureLocation, cert, items, policy, reference);
+		}
+
+		public bool SignUbl(XmlElement signatureLocation, X509Certificate2 cert, List<SignedItem> items, SignaturePolicy policy)
+		{
+			XadesReference reference = new XadesReference(string.Empty, TransformSet.EInvoice.TransformChain);
+			return SignInternal(signatureLocation, cert, items, policy, reference);
+		}
+
+		private bool SignInternal(XmlElement signatureLocation, X509Certificate2 cert, List<SignedItem> items, SignaturePolicy policy, XadesReference reference)
 		{
 			// create signature
 			Xades xades = Xades.Create(XmlDocument, signatureLocation);
@@ -62,7 +76,6 @@ namespace OpenSBR.Signature
 				// TODO: determine transforms, calculate digest
 			}
 			// add document reference
-			XadesReference reference = new XadesReference($"#xpointer(/)", TransformSet.Document.TransformChain);
 			SignedItem signatureItem = items.Single(x => x.Type == SignedItemType.Document);
 			if (policy != null && signatureItem.CommitmentType != null)
 				reference.CommitmentTypeId = new ObjectIdentifier() { Identifier = signatureItem.CommitmentType.Identifier, Description = signatureItem.CommitmentType.Description };
@@ -72,11 +85,11 @@ namespace OpenSBR.Signature
 			{
 				reference = new XadesReference(item.Uri, item.Transform.TransformChain);
 				if (policy != null && item.CommitmentType != null)
-					reference.CommitmentTypeId = new ObjectIdentifier() { Identifier = signatureItem.CommitmentType.Identifier, Description = signatureItem.CommitmentType.Description };
+					reference.CommitmentTypeId = new ObjectIdentifier() { Identifier = signatureItem.CommitmentType?.Identifier, Description = signatureItem.CommitmentType?.Description };
 				xades.References.Add(reference);
 			}
 			// sign
-			string baseUri = XmlDocument.BaseURI;
+			string? baseUri = XmlDocument?.BaseURI;
 			xades.UriResolver = u =>
 			{
 				Uri uri = baseUri == null ? new Uri(u) : new Uri(new Uri(baseUri), u);

@@ -23,10 +23,25 @@ namespace System.Security.Cryptography.Xml.Patched
         private string _xpathexpr;
         private XmlDocument _document;
         private XmlNamespaceManager _nsm;
+        private XPathContext _context;
+        private string _placeholder;
 
         public XmlDsigXPathTransform()
         {
             Algorithm = SignedXml.XmlDsigXPathTransformUrl;
+        }
+
+        public XmlDsigXPathTransform(string xpath, params Collections.Generic.KeyValuePair<string, string>[] nsPairs) : this()
+        {
+            _xpathexpr = xpath;
+            _nsm = new XmlNamespaceManager(new NameTable());
+            foreach (Collections.Generic.KeyValuePair<string, string> pair in nsPairs)
+                _nsm.AddNamespace(pair.Key, pair.Value);
+        }
+
+        public XmlDsigXPathTransform(string xpath, string creationPlaceholder, params Collections.Generic.KeyValuePair<string, string>[] nsPairs) : this(xpath, nsPairs)
+        {
+            _placeholder = creationPlaceholder;
         }
 
         public override Type[] InputTypes
@@ -54,7 +69,8 @@ namespace System.Security.Cryptography.Xml.Patched
                 {
                     if (elem.LocalName == "XPath")
                     {
-                        _xpathexpr = elem.InnerXml.Trim(null);
+                        _xpathexpr = elem.InnerText.Trim(null);
+                        _context = new XPathContext(elem);
                         XmlNodeReader nr = new XmlNodeReader(elem);
                         XmlNameTable nt = nr.NameTable;
                         _nsm = new XmlNamespaceManager(nt);
@@ -165,34 +181,36 @@ namespace System.Security.Cryptography.Xml.Patched
 
         public override object GetOutput()
         {
-            CanonicalXmlNodeList resultNodeList = new CanonicalXmlNodeList();
-            if (!string.IsNullOrEmpty(_xpathexpr))
-            {
-                XPathNavigator navigator = _document.CreateNavigator();
-                XPathNodeIterator it = navigator.Select("//. | //@*");
+            //CanonicalXmlNodeList resultNodeList = new CanonicalXmlNodeList();
+            //if (!string.IsNullOrEmpty(_xpathexpr))
+            //{
+            //    XPathNavigator navigator = _document.CreateNavigator();
+            //    XPathNodeIterator it = navigator.Select("//. | //@*");
 
-                XPathExpression xpathExpr = navigator.Compile("boolean(" + _xpathexpr + ")");
-                xpathExpr.SetContext(_nsm);
+            //    XPathExpression xpathExpr = navigator.Compile("boolean(" + _xpathexpr + ")");
+            //    xpathExpr.SetContext(_nsm);
 
-                while (it.MoveNext())
-                {
-                    XmlNode node = ((IHasXmlNode)it.Current).GetNode();
+            //    while (it.MoveNext())
+            //    {
+            //        XmlNode node = ((IHasXmlNode)it.Current).GetNode();
 
-                    bool include = (bool)it.Current.Evaluate(xpathExpr);
-                    if (include == true)
-                        resultNodeList.Add(node);
-                }
+            //        bool include = (bool)it.Current.Evaluate(xpathExpr);
+            //        if (include == true)
+            //            resultNodeList.Add(node);
+            //    }
 
-                // keep namespaces
-                it = navigator.Select("//namespace::*");
-                while (it.MoveNext())
-                {
-                    XmlNode node = ((IHasXmlNode)it.Current).GetNode();
-                    resultNodeList.Add(node);
-                }
-            }
+            //    // keep namespaces
+            //    it = navigator.Select("//namespace::*");
+            //    while (it.MoveNext())
+            //    {
+            //        XmlNode node = ((IHasXmlNode)it.Current).GetNode();
+            //        resultNodeList.Add(node);
+            //    }
+            //}
 
-            return resultNodeList;
+            //return resultNodeList;
+            (string xpath, XmlNamespaceManager nsm) = _context != null ? (_xpathexpr, _context) : (_placeholder, _nsm);
+            return _document.SelectNodes($"(//. | //@* | //namespace::*)[{xpath}]", nsm);
         }
 
         public override object GetOutput(Type type)
@@ -200,6 +218,60 @@ namespace System.Security.Cryptography.Xml.Patched
             if (type != typeof(XmlNodeList) && !type.IsSubclassOf(typeof(XmlNodeList)))
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
             return (XmlNodeList)GetOutput();
+        }
+
+        internal class XPathContext : XsltContext, IXmlNamespaceResolver
+        {
+            private readonly XmlNode _hereNode;
+
+            public XPathContext(XmlNode hereNode) : base()
+            {
+                _hereNode = hereNode;
+            }
+
+            public override bool Whitespace => true;
+            public override int CompareDocument(string baseUri, string nextbaseUri) => 0;
+            public override bool PreserveWhitespace(XPathNavigator node) => true;
+
+            public override IXsltContextFunction? ResolveFunction(string prefix, string name, XPathResultType[] ArgTypes)
+            {
+                if (prefix.Length == 0 && name == "here")
+                    return new HereFunction(_hereNode);
+                return null;
+            }
+
+            public override IXsltContextVariable? ResolveVariable(string prefix, string name) => null;
+
+            public override string LookupNamespace(string prefix)
+            {
+                if (!string.IsNullOrEmpty(prefix))
+                {
+                    string ns = _hereNode.GetNamespaceOfPrefix(prefix);
+                    if (!string.IsNullOrEmpty(ns))
+                        return ns;
+                }
+                return base.LookupNamespace(prefix);
+            }
+
+            public class HereFunction : IXsltContextFunction
+            {
+                private readonly XPathNodeIterator _iterator;
+
+                public HereFunction(XmlNode node)
+                {
+                    _iterator = node.CreateNavigator().Select(".");
+                }
+
+                public int Minargs => 0;
+                public int Maxargs => 0;
+                public XPathResultType ReturnType => XPathResultType.NodeSet;
+                public XPathResultType[] ArgTypes { get; } = new XPathResultType[0];
+
+                public object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
+                {
+                    return _iterator.Clone();
+                }
+            }
         }
     }
 }

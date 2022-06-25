@@ -109,7 +109,7 @@ namespace OpenSBR.XAdES
 			References = new List<XadesReference>();
 			foreach (Reference reference in _signedXml.SignedInfo.References)
 			{
-				if (reference.Type == Xades.XadesReferenceType && reference.Uri[0] == '#')
+				if (reference.Type == Xades.XadesReferenceType && !string.IsNullOrEmpty(reference.Uri) && reference.Uri[0] == '#')
 				{
 					XmlElement signedProperties = element.SelectSingleNode($"//xades:SignedProperties[@Id='{reference.Uri.Substring(1)}']", nsm) as XmlElement;
 					if (signedProperties != null)

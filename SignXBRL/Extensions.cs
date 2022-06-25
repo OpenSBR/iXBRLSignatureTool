@@ -35,15 +35,13 @@ namespace SignXBRL
 		{
 			if (e.Data != null)
 			{
-				string[] files = e.Data.GetData(DataFormats.FileDrop) as string[];
-				if (files != null)
+				if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
 				{
 					foreach (string file in files)
 						yield return file;
 					yield break;
 				}
-				string uri = e.Data.GetData(DataFormats.StringFormat) as string;
-				if (uri != null)
+				if (e.Data.GetData(DataFormats.StringFormat) is string uri)
 					yield return uri;
 			}
 		}
@@ -92,7 +90,7 @@ namespace SignXBRL
 			return list.Count > 0 ? String.Join(separator, list) : null;
 		}
 
-		private static System.Text.RegularExpressions.Regex indexRegex = new System.Text.RegularExpressions.Regex("([A-Z]+)=([^,]+)");
+		private static readonly System.Text.RegularExpressions.Regex indexRegex = new System.Text.RegularExpressions.Regex("([A-Z]+)=([^,]+)");
 		public static Dictionary<string, string> SplitName(this X500DistinguishedName distinguishedName)
 		{
 			return indexRegex.Matches(distinguishedName.Name).OfType<System.Text.RegularExpressions.Match>().ToDictionary(x => x.Groups[1].Value, x => x.Groups[2].Value);
@@ -122,5 +120,50 @@ namespace SignXBRL
 			return child;
 		}
 
+		public static XmlElement CreateChild(this XmlElement element, string name, string ns, string innerText)
+		{
+			XmlElement node = CreateChild(element, name, ns);
+			node.InnerText = innerText;
+
+			return node;
+		}
+
+		public static XmlElement FindOrCreateChild(this XmlElement element, string name, string ns, XmlNamespaceManager nsm, string innerText)
+		{
+			XmlElement node = FindOrCreateChild(element, name, ns, nsm);
+			node.InnerText = innerText;
+
+			return node;
+		}
+
+		public static XmlElement FindOrCreateChild(this XmlElement element, string name, string ns, XmlNamespaceManager nsm)
+		{
+			string prefix = element.GetPrefixOfNamespace(ns);
+			if (!(element.SelectSingleNode($"{prefix}:{name}", nsm) is XmlElement child))
+			{
+				child = element.OwnerDocument.CreateElement(prefix, name, ns);
+				element.AppendChild(child);
+			}
+			return child;
+		}
+
+		public static XmlElement FindOrCreateChild(this XmlElement element, string name, string ns, XmlNamespaceManager nsm, bool prepend)
+		{
+			if (prepend)
+			{
+				string prefix = element.GetPrefixOfNamespace(ns);
+				if (string.IsNullOrEmpty(prefix))
+					prefix = nsm.LookupPrefix(ns);
+
+				if (!(element.SelectSingleNode($"{prefix}:{name}", nsm) is XmlElement child))
+				{
+					child = element.OwnerDocument.CreateElement(prefix, name, ns);
+					element.PrependChild(child);
+				}
+				return child;
+			}
+			else
+				return element.FindOrCreateChild(name, ns, nsm);
+		}
 	}
 }

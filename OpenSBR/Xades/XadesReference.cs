@@ -67,7 +67,7 @@ namespace OpenSBR.XAdES
 		/// <returns></returns>
 		internal Reference GetReference(Xades.UriResolverDelegate resolver = null)
 		{
-			Stream stream = (resolver != null && !URI.StartsWith("#")) ? resolver(URI) : null;
+			Stream stream = (resolver != null && !string.IsNullOrEmpty(URI) && !URI.StartsWith("#")) ? resolver(URI) : null;
 			Reference reference = (stream != null) ? new Reference(stream) : new Reference(URI);
 
 			reference.Uri = URI;

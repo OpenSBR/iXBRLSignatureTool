@@ -54,10 +54,22 @@ namespace OpenSBR.Signature
 			return transform;
 		}
 
+		private static Transform GetUblEnvelopedSignatureTransform()
+		{
+			return new XmlDsigXPathTransform("count(ancestor-or-self::sig:UBLDocumentSignatures | here()/ancestor::sig:UBLDocumentSignatures[1]) > count(ancestor-or-self::sig:UBLDocumentSignatures)", "not(ancestor-or-self::sig:UBLDocumentSignatures)", new System.Collections.Generic.KeyValuePair<string, string>("sig", "urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2"));
+			//XmlDocument document = new XmlDocument();
+			//document.LoadXml("<ds:XPath xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\" xmlns:sig=\"urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2\">count(ancestor-or-self::sig:UBLDocumentSignatures | here()/ancestor::sig:UBLDocumentSignatures[1]) > count(ancestor-or-self::sig:UBLDocumentSignatures)</ds:XPath>");
+			//XmlDsigXPathTransform transform = new XmlDsigXPathTransform();
+			//transform.LoadInnerXml(document.SelectNodes("/*"));
+			//return transform;
+		}
+
 		public static TransformSet Document = new TransformSet("Document transform", GetChain(GetEnvelopedSignatureTransform(), new XmlDsigC14NWithCommentsTransform()));
 		public static TransformSet Signature = new TransformSet("Countersignature transform", GetChain(new XmlDsigExcC14NTransform()));
 
 		public static TransformSet XMLFile = new TransformSet("XML file", GetChain(new XmlDsigC14NWithCommentsTransform()));
 		public static TransformSet File = new TransformSet("File", (TransformChain)null);
+
+		public static TransformSet EInvoice = new TransformSet("E-invoice transform", GetChain(GetUblEnvelopedSignatureTransform(), new XmlDsigC14NTransform()));
 	}
 }

@@ -127,9 +127,13 @@ namespace SignXBRL
 			NotifyChange("SignEnable");
 		}
 
+		enum DocumentType { any, ubl, ixbrl }
+
 		// create signature
 		private void Sign_Click(object sender, RoutedEventArgs e)
 		{
+			DocumentType documentType = DocumentType.any;
+
 			// select certificate
 			X509Certificate2 cert = SelectedCertificate;
 			if (cert == null)
@@ -145,15 +149,16 @@ namespace SignXBRL
 			Cursor = Cursors.Wait;
 
 			XmlDocument xmlDocument = _document.XmlDocument;
-			bool result;
+			bool result = false;
 			if (_parentSignature == null)
 			{
 				// find location for signature
-				XmlElement signatureLocation;
+				XmlElement signatureLocation = null;
 				if (_document.Signatures.Any())
 					signatureLocation = (XmlElement)_document.Signatures.First().XmlElement.ParentNode;
 				else if (xmlDocument.DocumentElement.LocalName == "html" && xmlDocument.DocumentElement.NamespaceURI == "http://www.w3.org/1999/xhtml")
 				{
+					documentType = DocumentType.ixbrl;
 					// find resources section
 					XmlNamespaceManager nsm = new XmlNamespaceManager(new NameTable());
 					nsm.AddNamespace("xhtml", "http://www.w3.org/1999/xhtml");
@@ -185,10 +190,97 @@ namespace SignXBRL
 						signatureLocation.SetAttribute("style", "display: none");
 					}
 				}
+				else if (xmlDocument.DocumentElement.LocalName == "Invoice" && xmlDocument.DocumentElement.NamespaceURI == "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2")
+				{
+					documentType = DocumentType.ubl;
+					// find resources section
+					XmlNamespaceManager nsm = new XmlNamespaceManager(new NameTable());
+					nsm.AddNamespace("ubl", "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2");
+					nsm.AddNamespace("cbc", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2");
+					nsm.AddNamespace("cac", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
+					nsm.AddNamespace("ext", "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2");
+					nsm.AddNamespace("sig", "urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2");
+					nsm.AddNamespace("sac", "urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2");
+					nsm.AddNamespace("sbc", "urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2");
+					nsm.AddNamespace("sbc", "urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2");
+
+					XmlElement body = xmlDocument.DocumentElement;
+
+					XmlElement sibling = body.SelectSingleNode("cac:AccountingSupplierParty", nsm) as XmlElement;
+					if (sibling != null)
+					{
+						XmlElement ublSignature = body.OwnerDocument.CreateElement("cac", "Signature", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
+						body.InsertBefore(ublSignature, sibling);
+
+						//XmlElement ublSignature = body.CreateChild("Signature", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
+						ublSignature.CreateChild("ID", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2", "urn:oasis:names:specification:ubl:signature:Invoice");
+						ublSignature.CreateChild("ValidationDate", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2", XmlConvert.ToString(DateTime.UtcNow, "yyyy-MM-ddZ"));
+						ublSignature.CreateChild("ValidationTime", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2", XmlConvert.ToString(DateTime.UtcNow, "HH:mm:ssZ"));
+						ublSignature.CreateChild("SignatureMethod", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2", "urn:oasis:names:specification:ubl:dsig:enveloped");
+
+						string lei = cert.GLEIFLEI();
+						if (lei != null)
+						{
+							XmlElement party = ublSignature.CreateChild("SignatoryParty", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
+							XmlElement partyIdentification = party.CreateChild("PartyIdentification", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
+							XmlElement partyIdentificationId = partyIdentification.CreateChild("ID", "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2");
+
+							partyIdentificationId.SetAttribute("schemeID", "LEI");
+							partyIdentificationId.InnerText = lei;
+						}
+					}
+
+					XmlElement extensions = body.FindOrCreateChild("UBLExtensions", "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2", nsm, true);
+					XmlElement extension = extensions.CreateChild("UBLExtension", "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2");
+					XmlElement extensionContent = extension.CreateChild("ExtensionContent", "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2");
+					XmlElement documentSignatures = extensionContent.CreateChild("UBLDocumentSignatures", "urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2");
+					signatureLocation = documentSignatures.CreateChild("SignatureInformation", "urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2");
+
+					//signatureLocation = extensionContent;
+
+					//XmlElement signatureExtension = null;
+					//if (extensions == null)
+					//{
+					//	extensions = body.CreateChild("UBLExtensions", "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2");
+					//	signatureExtension = extensions.CreateChild("UBLExtension", "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2");
+					//}
+					//else
+					//{
+
+					//}
+
+
+					//{
+					//	// no xbrl resources; treat as regular xhtml
+					//	//XmlElement body = (XmlElement)xmlDocument.SelectSingleNode("/ubl:Invoice", nsm);
+					//	//if (body != null)
+					//	//{
+					//	//	signatureLocation = body.CreateChild("UBLExtensions", "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2");
+					//	//	//signatureLocation.SetAttribute("style", "display: none");
+					//	//}
+					//}
+				}
 				else
 					signatureLocation = xmlDocument.DocumentElement;
 
-				result = _document.Sign(signatureLocation, cert, Items.ToList(), SelectedPolicy);
+				if (signatureLocation != null)
+				{
+					switch (documentType)
+					{
+						case DocumentType.ubl:
+							result = _document.SignUbl(signatureLocation, cert, Items.ToList(), SelectedPolicy);
+							break;
+						case DocumentType.any:
+						case DocumentType.ixbrl:
+						default:
+							result = _document.Sign(signatureLocation, cert, Items.ToList(), SelectedPolicy);
+							break;
+					}
+				}
+				else
+				{
+					MessageBox.Show(this, "Unable to find the required document location", "Error signing", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
 			}
 			else
 			{

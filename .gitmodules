@@ -1,0 +1,3 @@
+[submodule "OpenSbrSignatureLibraries"]
+	path = OpenSbrSignatureLibraries
+	url = groenveld@vs-ssh.visualstudio.com:v3/groenveld/GLEIF/OpenSbrSignatureLibraries

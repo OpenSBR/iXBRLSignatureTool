@@ -121,40 +121,4 @@ namespace SignXBRL
 		}
 		#endregion
 	}
-
-	public class SignatureTypeValueConverter : IValueConverter
-	{
-		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-		{
-			switch ((SignatureType)value)
-			{
-				case SignatureType.Document:
-					return "Document signature";
-				case SignatureType.CounterSignature:
-					return "Countersignature";
-			}
-			return "Generic signature";
-		}
-
-		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-		{
-			throw new NotImplementedException();
-		}
-	}
-
-	public class CertificateValueConverter : IValueConverter
-	{
-		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-		{
-			System.Security.Cryptography.X509Certificates.X509Certificate2 cert = value as System.Security.Cryptography.X509Certificates.X509Certificate2;
-			if ("ca".Equals(parameter))
-				return cert?.IssuerInfo();
-			return cert?.SubjectInfo();
-		}
-
-		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-		{
-			throw new NotImplementedException();
-		}
-	}
 }
